@@ -2,6 +2,8 @@ import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import GitHubProvider from "next-auth/providers/github"
 
+import { authenticateToBackend } from "@/hooks/use-http"
+
 export default NextAuth({
 	providers: [
 		GoogleProvider({
@@ -14,18 +16,16 @@ export default NextAuth({
 		})
 	],
 	callbacks: {
-		async jwt({ token, user, account }) {
-			if (account && user) {
-				token.accessToken = account.access_token
+		async jwt({ token, user, trigger }) {
+			if (user) {
+				const { id, name, email, image } = user
+				token.token = await authenticateToBackend(trigger.toLowerCase(), { id, name, email, image })
 			}
 			return token
 		},
 		async session({ session, token }) {
-			session.accessToken = token.accessToken
+			session.token = token.token
 			return session
 		}
-	},
-	session: {
-		strategy: 'jwt'
 	}
 })
